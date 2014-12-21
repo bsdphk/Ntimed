@@ -124,7 +124,7 @@ NTP_Peer_Poll(struct ocx *ocx, int fd, const struct ntp_peer *np, double tmo)
 	l = sendto(fd, buf, len, 0, np->sa, np->sa_len);
 	if (l != len)
 		Fail(ocx, l < 0 ? 1 : 0,
-		    "Tx peer '%s' @%s got %d", np->hostname, np->ip, l);
+		    "Tx peer %s %s got %zd", np->hostname, np->ip, l);
 
 	(void)TB_Now(&t0);
 
@@ -155,8 +155,8 @@ NTP_Peer_Poll(struct ocx *ocx, int fd, const struct ntp_peer *np, double tmo)
 			Fail(ocx, 1, "Rx failed\n");
 
 		if (i != 48) {
-			Debug(ocx, "Rx peer %s @%s got len=%d\n",
-			    np->hostname, i);
+			Debug(ocx, "Rx peer %s %s got len=%d\n",
+			    np->hostname, np->ip, i);
 			continue;
 		}
 

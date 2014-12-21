@@ -203,7 +203,7 @@ SimFile_Open(struct ocx *ocx, const char *fn, struct todolist *tdl,
 			break;
 		case 2:
 			if (sscanf(buf, "# Peer %s %s", buf2, buf3) != 2)
-				Fail(ocx, 0, "Expected '# Peer' line", fpeer);
+				Fail(ocx, 0, "Expected '# Peer' line");
 
 			np = NTP_Peer_NewLookup(ocx, buf3);
 			AN(np);

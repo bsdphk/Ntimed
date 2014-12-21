@@ -49,14 +49,16 @@ enum ocx_chan {
 	OCX_DEBUG,		// think: stdout
 };
 
-void Put(struct ocx *, enum ocx_chan, const char *, ...);
+void Put(struct ocx *, enum ocx_chan, const char *, ...)
+    __printflike(3, 4);
 void PutHex(struct ocx *, enum ocx_chan, const void *, ssize_t len);
 
 /*
  * Report "Failure: " + args + "\n" [+ errno-line] + "\n".  exit(1);
  */
 void Fail(struct ocx *, int err, const char *, ...) \
-	__attribute__((__noreturn__));
+    __attribute__((__noreturn__))
+    __printflike(3, 4);
 
 #define Debug(ocx, ...)		Put(ocx, OCX_DEBUG, __VA_ARGS__)
 #define DebugHex(ocx, ptr, len)	PutHex(ocx, OCX_DEBUG, ptr, len)

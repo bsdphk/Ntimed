@@ -86,6 +86,14 @@
 #define __match_proto__(xxx)		/*lint -e{818} */
 
 /**********************************************************************
+ * Compiler tricks
+ */
+
+#ifndef __printflike
+#define __printflike(a, b)
+#endif
+
+/**********************************************************************
  * Mini object type checking
  *
  * This is a trivial struct type checking framework I have used with
