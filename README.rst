@@ -62,7 +62,7 @@ Ntimed.
 Who do I yell at, and how ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Me, Poul-Henning Kamp.  Please send email to 'phk@Ntimed.org'.
+Me, Poul-Henning Kamp.  Please send email to phk@Ntimed.org.
 
 
 What happens next ?
