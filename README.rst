@@ -87,7 +87,7 @@ Pull the source code over to the machine you want to play on, and::
 	sh configure
 	make
 
-(That was fast, wasn't it ?  -- Amazing how slow things arean't
+(That was fast, wasn't it ?  -- Amazing how slow things aren't
 when you don't go hunting for 27 different FORTRAN compilers for
 your C code.)
 
