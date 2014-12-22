@@ -73,7 +73,7 @@ PARAM_PLL_STD(pll_std_p_init,
 	"Proportional term when PLL starts.\n\n"
 	"Reducing this will make the PLL more resistant to measurement"
 	" noise and jitter, but also makes it converge slower."
-	"  Increasing this will allmost certainly cause oscillation."
+	"  Increasing this will almost certainly cause oscillation."
 )
 
 PARAM_PLL_STD(pll_std_i_init,
@@ -85,17 +85,17 @@ PARAM_PLL_STD(pll_std_i_init,
 
 PARAM_PLL_STD(pll_std_capture_time,
 	20, 1e6, 300,
-	"Capture time before stiffning PLL.\n\n"
+	"Capture time before stiffening PLL.\n\n"
 	"After this many seconds, the PLL will start to stiffen the"
 	" P and I terms to gain noise immunity."
 	"  Decreasing risks that initial frequency capture is not finished,"
 	" which will increase the offset-excursion."
-	"  Increasing just delays this stiffning."
+	"  Increasing just delays this stiffening."
 )
 
 PARAM_PLL_STD(pll_std_stiffen_rate,
 	0.5, 1.0, 0.999,
-	"Rate of PLL P/I term stiffning.\n\n"
+	"Rate of PLL P/I term stiffening.\n\n"
 	"The exponential stiffening per second of D and I terms."
 	"  Decreasing makes stiffening faster."
 	"  Increasing makes stiffening slower."
@@ -105,7 +105,7 @@ PARAM_PLL_STD(pll_std_p_limit,
 	1e-6, 0.50, 3e-2,
 	"Lower limit for Proportional term.\n\n"
 	"Reducing this will make the PLL more resistent to noise,"
-	" but going to far it will not be able to steer the clock fast enough."
+	" but going too far it will not be able to steer the clock fast enough."
 	"  Increasing this makes the PLL more agile and prone to noise."
 )
 
