@@ -94,6 +94,7 @@ putv(struct ocx *ocx, enum ocx_chan chan, const char *fmt, va_list ap)
 		(void)vfprintf(dst, fmt, ap);
 	if (chan == OCX_DIAG)
 		vsyslog(LOG_ERR, fmt, ap2);
+	va_end(ap2);
 }
 
 /**********************************************************************
