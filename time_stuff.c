@@ -65,7 +65,7 @@ ts_fixstorage(struct timestamp *storage)
 /**********************************************************************/
 
 struct timestamp *
-TS_Nanosec(struct timestamp *storage, intmax_t sec, intmax_t nsec)
+TS_Nanosec(struct timestamp *storage, int64_t sec, int64_t nsec)
 {
 
 	storage = ts_fixstorage(storage);
@@ -151,7 +151,7 @@ TS_Format(char *buf, ssize_t len, const struct timestamp *ts)
 		y -= 1000000000ULL;
 		x += 1;
 	}
-	assert(snprintf(buf, len, "%jd.%09jd", x, y) < len);
+	assert(snprintf(buf, len, "%jd.%09jd", (intmax_t)x, (intmax_t)y) < len);
 }
 
 /**********************************************************************
