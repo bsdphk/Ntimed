@@ -28,7 +28,6 @@
  *
  */
 
-struct sockaddr;
 struct ntp_peer;
 
 #ifdef NTP_H_INCLUDED
@@ -90,7 +89,6 @@ void NF_Init(void);
 
 /* ntp_peer.c -- State management *************************************/
 
-struct ntp_group;
 
 struct ntp_peer {
 	unsigned			magic;
@@ -115,7 +113,8 @@ struct ntp_peer {
 struct ntp_peer *NTP_Peer_New(const char *name, const void *, unsigned);
 struct ntp_peer *NTP_Peer_NewLookup(struct ocx *ocx, const char *name);
 void NTP_Peer_Destroy(struct ntp_peer *np);
-int NTP_Peer_Poll(struct ocx *, int fd, const struct ntp_peer *, double tmo);
+int NTP_Peer_Poll(struct ocx *, const struct udp_socket *,
+    const struct ntp_peer *, double tmo);
 
 /* ntp_peerset.c -- Peer set management ****************************/
 
@@ -124,7 +123,7 @@ void NTP_PeerSet_AddPeer(struct ocx *ocx, struct ntp_peerset *npl,
     struct ntp_peer *np);
 int NTP_PeerSet_Add(struct ocx *, struct ntp_peerset *,
     const char *hostname);
-void NTP_PeerSet_Poll(struct ocx *, struct ntp_peerset *, int,
+void NTP_PeerSet_Poll(struct ocx *, struct ntp_peerset *, struct udp_socket *,
     struct todolist *);
 
 struct ntp_peer *NTP_PeerSet_Iter0(const struct ntp_peerset *);

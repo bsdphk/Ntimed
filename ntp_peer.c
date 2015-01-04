@@ -25,10 +25,9 @@
  *
  */
 
-#include <math.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <poll.h>
 #include <netdb.h>
 #include <sys/socket.h>
 
@@ -103,28 +102,30 @@ NTP_Peer_Destroy(struct ntp_peer *np)
 }
 
 int
-NTP_Peer_Poll(struct ocx *ocx, int fd, const struct ntp_peer *np, double tmo)
+NTP_Peer_Poll(struct ocx *ocx, const struct udp_socket *usc,
+    const struct ntp_peer *np, double tmo)
 {
 	char buf[100];
 	ssize_t len;
 	struct sockaddr_storage rss;
 	socklen_t rssl;
 	ssize_t l;
-	int i, timeout_msec;
-	struct pollfd pfd[1];
+	int i;
 	struct timestamp t0, t1, t2;
 	double d;
 
-	assert(fd >= 0);
+	AN(usc);
 	CHECK_OBJ_NOTNULL(np, NTP_PEER_MAGIC);
 	assert(tmo > 0.0 && tmo <= 1.0);
 
 	len = NTP_Packet_Pack(buf, sizeof buf, np->tx_pkt);
 
-	l = sendto(fd, buf, len, 0, np->sa, np->sa_len);
-	if (l != len)
-		Fail(ocx, l < 0 ? 1 : 0,
-		    "Tx peer %s %s got %zd", np->hostname, np->ip, l);
+	l = Udp_Send(ocx, usc, np->sa, np->sa_len, buf, len);
+	if (l != len) {
+		Debug(ocx, "Tx peer %s %s got %zd (%s)\n",
+		    np->hostname, np->ip, l, strerror(errno));
+		return (0);
+	}
 
 	(void)TB_Now(&t0);
 
@@ -132,24 +133,11 @@ NTP_Peer_Poll(struct ocx *ocx, int fd, const struct ntp_peer *np, double tmo)
 		(void)TB_Now(&t1);
 		d = TS_Diff(&t1, &t0);
 
-		timeout_msec = lround(1e3 * (tmo - d));
-
-		pfd[0].fd = fd;
-		pfd[0].events = POLLIN;
-		pfd[0].revents = 0;
-
-		if (timeout_msec <= 0)
-			i = 0;
-		else
-			i = poll(pfd, 1, timeout_msec);
-
-		if (i < 0)
-			Fail(ocx, 1, "poll(2) failed\n");
+		i = UdpTimedRx(ocx, usc, &rss, &rssl, &t2,
+		    buf, sizeof buf, tmo - d);
 
 		if (i == 0)
 			return (0);
-
-		i = UdpTimedRx(ocx, fd, &rss, &rssl, &t2, buf, sizeof buf);
 
 		if (i < 0)
 			Fail(ocx, 1, "Rx failed\n");

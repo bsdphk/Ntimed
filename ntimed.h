@@ -38,6 +38,7 @@
 #include "ntimed_tricks.h"
 
 struct todolist;
+struct udp_socket;
 
 /* ocx_*.c -- Operational Context *************************************/
 
@@ -133,7 +134,6 @@ void TS_RunTest(struct ocx *ocx);
 
 /* todo.c -- todo-list scheduler **************************************/
 
-struct todo;	// private
 
 enum todo_e {
 	TODO_FAIL	= -1,	// Break out of TODO_Run()

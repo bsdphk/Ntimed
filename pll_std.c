@@ -102,16 +102,16 @@ pll_std(struct ocx *ocx, double offset, double weight)
 		 * Ideally, we should scale the pll_[ab] terms and the
 		 * stiffening of them based on the weight.  That is harder
 		 * than it sounds -- or at least I have not found a good
-		 * candidate function yet. 
+		 * candidate function yet.
 		 * In the meantime this is a simple threshold based
 		 * prevention of horribly distant servers injecting too
 		 * much noise into the very reactive default PLL.
 		 * Some averaging of the weight may be required.
 		 */
-		if (weight < 50) {	
+		if (weight < 50) {
 			used_a = 3e-2;
 			used_b = 5e-4;
-		} else if (weight < 150) {	
+		} else if (weight < 150) {
 			used_a = 6e-2;
 			used_b = 1e-3;
 		} else {

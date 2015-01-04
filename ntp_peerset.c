@@ -53,7 +53,7 @@ struct ntp_peerset {
 	TAILQ_HEAD(,ntp_group)		group;
 	int				ngroup;
 
-	int				fd;
+	struct udp_socket		*usc;
 	double				t0;
 	double				init_duration;
 	double				poll_period;
@@ -186,7 +186,7 @@ ntp_peerset_poll(struct ocx *ocx, struct todolist *tdl, void *priv)
 	}
 	npl->t0 += d;
 	TODO_ScheduleRel(tdl, ntp_peerset_poll, npl, d, 0.0, "NTP_PeerSet");
-	if (NTP_Peer_Poll(ocx, npl->fd, np, 0.8)) {
+	if (NTP_Peer_Poll(ocx, npl->usc, np, 0.8)) {
 		if (np->filter_func != NULL)
 			np->filter_func(ocx, np);
 	}
@@ -214,16 +214,17 @@ ntp_peerset_herd(struct ocx *ocx, struct todolist *tdl, void *priv)
 /**********************************************************************/
 
 void
-NTP_PeerSet_Poll(struct ocx *ocx, struct ntp_peerset *npl, int fd,
+NTP_PeerSet_Poll(struct ocx *ocx, struct ntp_peerset *npl,
+    struct udp_socket *usc,
     struct todolist *tdl)
 {
 
 	(void)ocx;
 	CHECK_OBJ_NOTNULL(npl, NTP_PEERSET_MAGIC);
-	assert(fd >= 0);
+	AN(usc);
 	AN(tdl);
 
-	npl->fd = fd;
+	npl->usc = usc;
 	npl->t0 = 1.0;
 	npl->init_duration = 64.;
 	npl->init_packets = 6.;

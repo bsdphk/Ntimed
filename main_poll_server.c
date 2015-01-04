@@ -40,7 +40,7 @@
 #include "ntp.h"
 #include "udp.h"
 
-static int fd;
+static struct udp_socket *usc;
 
 static void
 mps_filter(struct ocx *ocx, const struct ntp_peer *np)
@@ -61,7 +61,7 @@ mps_mon(struct ocx *ocx, struct todolist *tdl, void *priv)
 	(void)ocx;
 	(void)tdl;
 	CAST_OBJ_NOTNULL(np, priv, NTP_PEER_MAGIC);
-	i = NTP_Peer_Poll(ocx, fd, np, 0.2);
+	i = NTP_Peer_Poll(ocx, usc, np, 0.2);
 	if (i == 1) {
 		NTP_Tool_Format(buf, sizeof buf, np->rx_pkt);
 		Put(ocx, OCX_TRACE,
@@ -146,15 +146,15 @@ main_poll_server(int argc, char *const *argv)
 		Put(NULL, OCX_TRACE,
 		    "# Monitor %s %s\n", mon->hostname, mon->ip);
 
-	fd = UdpTimedSocket(NULL, AF_INET);
-	assert(fd >= 0);
+	usc = UdpTimedSocket(NULL);
+	assert(usc != NULL);
 
 	TODO_ScheduleRel(tdl, mps_end, NULL, duration, 0, "End task");
 
 	if (mon != NULL)
 		TODO_ScheduleRel(tdl, mps_mon, mon, 0, 32, "Monitor");
 
-	NTP_PeerSet_Poll(NULL, npl, fd, tdl);
+	NTP_PeerSet_Poll(NULL, npl, usc, tdl);
 	(void)TODO_Run(NULL, tdl);
 	return (0);
 }

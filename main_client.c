@@ -52,7 +52,7 @@ main_client(int argc, char *const *argv)
 	struct ntp_peerset *npl;
 	struct todolist *tdl;
 	struct combine_delta *cd;
-	int fd;
+	struct udp_socket *usc;
 	int npeer = 0;
 
 	setbuf(stdout, NULL);
@@ -96,8 +96,8 @@ main_client(int argc, char *const *argv)
 
 	Param_Report(NULL, OCX_TRACE);
 
-	fd = UdpTimedSocket(NULL, AF_INET);
-	if (fd < 0)
+	usc = UdpTimedSocket(NULL);
+	if (usc == NULL)
 		Fail(NULL, errno, "Could not open UDP socket");
 
 	cd = CD_New();
@@ -107,7 +107,7 @@ main_client(int argc, char *const *argv)
 		np->combiner = CD_AddSource(cd, np->hostname, np->ip);
 	}
 
-	NTP_PeerSet_Poll(NULL, npl, fd, tdl);
+	NTP_PeerSet_Poll(NULL, npl, usc, tdl);
 
 	(void)TODO_Run(NULL, tdl);
 

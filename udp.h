@@ -33,7 +33,13 @@
  * UDP sockets
  */
 
-int UdpTimedSocket(struct ocx *ocx, int fam);
-ssize_t UdpTimedRx(struct ocx *ocx, int fd, struct sockaddr_storage *ss,
-    socklen_t *sl, struct timestamp *ts, void *buf, ssize_t len);
+
+struct udp_socket *UdpTimedSocket(struct ocx *ocx);
+ssize_t UdpTimedRx(struct ocx *, const struct udp_socket *,
+    struct sockaddr_storage *, socklen_t *,
+    struct timestamp *,
+    void *, ssize_t len,
+    double tmo);
+ssize_t Udp_Send(struct ocx *, const struct udp_socket *,
+    const void *sa, socklen_t, const void *ptr, ssize_t);
 

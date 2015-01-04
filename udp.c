@@ -24,21 +24,32 @@
  * SUCH DAMAGE.
  */
 
+#include <math.h>
+#include <poll.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 
 #include "ntimed.h"
 #include "udp.h"
 
-int
-UdpTimedSocket(struct ocx *ocx, int fam)
+struct udp_socket {
+	unsigned		magic;
+#define UDP_SOCKET_MAGIC	0x302a563f
+
+	int			fd4;
+	int			fd6;
+};
+
+static int
+udp_sock(int fam)
 {
 	int fd;
 	int i;
 
 	fd = socket(fam, SOCK_DGRAM, 0);
 	if (fd < 0)
-		Fail(ocx, 1, "socket(2) failed");
+		return (fd);
 
 #ifdef IP_RECVDSTADDR
 	i = 1;
@@ -57,22 +68,68 @@ UdpTimedSocket(struct ocx *ocx, int fam)
 	return (fd);
 }
 
+struct udp_socket *
+UdpTimedSocket(struct ocx *ocx)
+{
+	struct udp_socket *usc;
+
+	ALLOC_OBJ(usc, UDP_SOCKET_MAGIC);
+	AN(usc);
+	usc->fd4 = udp_sock(AF_INET);
+	usc->fd6 = udp_sock(AF_INET6);
+	if (usc->fd4 < 0 && usc->fd6 < 0)
+		Fail(ocx, 1, "socket(2) failed");
+	return (usc);
+}
+
 ssize_t
-UdpTimedRx(struct ocx *ocx, int fd, struct sockaddr_storage *ss, socklen_t *sl,
-    struct timestamp *ts, void *buf, ssize_t len)
+UdpTimedRx(struct ocx *ocx, const struct udp_socket *usc,
+    struct sockaddr_storage *ss, socklen_t *sl,
+    struct timestamp *ts, void *buf, ssize_t len, double tmo)
 {
 	struct msghdr msg;
 	struct iovec iov;
 	struct cmsghdr *cmsg;
 	u_char ctrl[1024];
 	ssize_t rl;
+	int i, j;
+	int tmo_msec;
+	struct pollfd pfd[2];
 
-	assert(fd >= 0);
+	CHECK_OBJ_NOTNULL(usc, UDP_SOCKET_MAGIC);
 	AN(ss);
 	AN(sl);
 	AN(ts);
 	AN(buf);
 	assert(len > 0);
+
+
+	j = 0;
+	if (usc->fd4 >= 0) {
+		pfd[j].fd = usc->fd4;
+		pfd[j].events = POLLIN;
+		pfd[j++].revents = 0;
+	}
+	if (usc->fd6 >= 0) {
+		pfd[j].fd = usc->fd6;
+		pfd[j].events = POLLIN;
+		pfd[j++].revents = 0;
+	}
+
+	if (tmo == 0.0) {
+		tmo_msec = -1;
+	} else {
+		tmo_msec = lround(1e3 * tmo);
+		if (tmo_msec <= 0)
+			tmo_msec = 0;
+	}
+	i = poll(pfd, j, tmo_msec);
+
+	if (i < 0)
+		Fail(ocx, 1, "poll(2) failed\n");
+
+	if (i == 0)
+		return (0);
 
 	memset(&msg, 0, sizeof msg);
 	msg.msg_name = (void*)ss;
@@ -86,7 +143,14 @@ UdpTimedRx(struct ocx *ocx, int fd, struct sockaddr_storage *ss, socklen_t *sl,
 	memset(ctrl, 0, sizeof ctrl);
 	cmsg = (void*)ctrl;
 
-	rl = recvmsg(fd, &msg, 0);
+	for (i = 0; i < j; i++)
+		if (pfd[i].revents & POLLIN)
+			break;
+
+	if (i == j)
+		return (0);
+
+	rl = recvmsg(pfd[i].fd, &msg, 0);
 	if (rl <= 0)
 		return (rl);
 
@@ -128,4 +192,26 @@ UdpTimedRx(struct ocx *ocx, int fd, struct sockaddr_storage *ss, socklen_t *sl,
 
 	}
 	return (rl);
+}
+
+ssize_t
+Udp_Send(struct ocx *ocx, const struct udp_socket *usc,
+    const void *ss, socklen_t sl, const void *buf, ssize_t len)
+{
+	const struct sockaddr *sa;
+
+	(void)ocx;
+	CHECK_OBJ_NOTNULL(usc, UDP_SOCKET_MAGIC);
+	AN(ss);
+	AN(sl);
+	AN(buf);
+	AN(len);
+	sa = ss;
+	if (sa->sa_family == AF_INET)
+		return (sendto(usc->fd4, buf, len, 0, ss, sl));
+	if (sa->sa_family == AF_INET6)
+		return (sendto(usc->fd6, buf, len, 0, ss, sl));
+
+	WRONG("Wrong AF_");
+	return (0);
 }

@@ -49,7 +49,6 @@
 
 #include "ntimed.h"
 
-struct combine_delta;
 
 struct cd_stat {
 	double				x;
