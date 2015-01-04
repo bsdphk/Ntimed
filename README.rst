@@ -135,7 +135,7 @@ Packet traces and simulations
 
 You can also run the program two other ways::
 
-	./Ntimed-client --poll-server some_ntp_server some_other_ntp_server
+	./ntimed-client --poll-server some_ntp_server some_other_ntp_server
 
 This will *not* steer your clock, but it will query the servers as
 if it should have steered your clock.  (Ntpd should *not* be running
@@ -145,7 +145,7 @@ but you can control that with "-d 3600" for one hour etc.
 If you save the output into a file (redirect stdout or use '-t filename'),
 you can use it as input for a simulation run::
 
-	./Ntimed-client --sim-client -s filename -t /tmp/_
+	./ntimed-client --sim-client -s filename -t /tmp/_
 
 And then run::
 
