@@ -1,0 +1,6 @@
+Makefile
+ntimed-client
+.gdbinit
+.depend
+*.o
+_*

@@ -21,18 +21,18 @@ but I tend to think that we stick a little bit more closely to them.
 
 This work is sponsored by Linux Foundation, partly in response to
 the HeartBleed fiasco, and after studying the 300,000+ lines of
-source-code in NTPD, I concluded that while it *could* be salvaged,
+source-code in NTPD.  I concluded that while it *could* be salvaged,
 it would be more economical, much faster and far more efficient to
 start from scratch.
 
-This is the result.
+Ntimed is the result.
 
 
 What should you do with this
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can take this code, compile it, run it, and it will steer your
-computers clock, but I am not going to encourage you to do that in
+computer's clock, but I am not going to encourage you to do that in
 production yet -- unless you know what you are doing and why you
 are doing it:  This is only a preview release.
 
@@ -41,8 +41,8 @@ packages for your favourite operating system, but we are not
 there yet.
 
 But if you are willing to read C-source code to figure out what the
-printouts mean, if you care about quality time-keeping or quality
-programming, I would love to hear your feedback, reviews and ideas.
+printouts mean or if you care about quality time-keeping or quality
+programming, I would love to hear your feedback, reviews, and ideas.
 
 
 Where can I read more ?
@@ -52,15 +52,15 @@ I maintain a blog-of-sorts about this project here:
 
 	http://phk.freebsd.dk/time
 
-There you will find information about theory, practice
+There you will find information about theory, practice,
 and the thinking that tries to bridge the gap between them.
 
 Updates typically happen during weekends -- that is when I work on
 Ntimed.
 
 
-Who do I yell at, and how ?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Who do I yell at and how ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Me, Poul-Henning Kamp.  Please send email to phk@Ntimed.org.
 
@@ -68,13 +68,13 @@ Me, Poul-Henning Kamp.  Please send email to phk@Ntimed.org.
 What happens next ?
 ~~~~~~~~~~~~~~~~~~~
 
-The plan is to have the first production ready release in Q1/2015.
+The plan is to have the first production-ready release in Q1/2015.
 
-Hopefully OS releases will then adopt Ntimed, first as alternative
+Hopefully OS releases will then adopt Ntimed - first as an alternative
 to, and later as replacement for NTPD in client applications.
 
 It is not my intent to start and manage an entirely new FOSS project
-around Ntimed, Harlan from The Network Time Foundation has agreed
+around Ntimed.  Harlan from The Network Time Foundation has agreed
 to adopt Ntimed and it will run in/with/parallel to the NTPD project.
 Or something.  We still need to flesh out all those details.
 
@@ -118,16 +118,16 @@ After a few seconds, your clock will be stepped if necessary.
 background -- from which point you can trust your clock to be good.)
 
 In the next 30-60 seconds, the PLL will eliminate any residual phase
-error and from this point in time, your computers clock should be
-good to a few milliseconds, depending on the quality of the servers.
+error and from this point in time, your computer's clock should be
+good to a few milliseconds - depending on the quality of the servers.
 
 After about 5-10 minutes, the PLL will have integrated the
-frequency error of your computers crystal, and the PLL will
+frequency error of your computer's crystal, and the PLL will
 start to "stiffen" to minimize the amount of steering necessary
 to keep the clock aligned to the servers.
 
-If you are using distant or very distant servers, things will
-take longer.
+If you are using distant or very distant servers, it will take longer
+time before the PLL stiffens.
 
 
 Packet traces and simulations

@@ -28,6 +28,8 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>		/* Compat for NetBSD */
+#include <sys/types.h>		/* Compat for OpenBSD */
 #include <sys/socket.h>
 
 #include "ntimed.h"
