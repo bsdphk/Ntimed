@@ -22,25 +22,63 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * The world has not enough cuss-words to precisely convey how broken the
+ * the struct sockaddr concept is.
  */
 
-#ifdef UDP_H_INCLUDED
-#error "udp.h included multiple times"
-#endif
-#define UDP_H_INCLUDED
+#include <string.h>
 
-/**********************************************************************
- * UDP sockets
- */
+#include <sys/types.h>		/* Compat for OpenBSD */
+#include <sys/socket.h>
 
+#include <netinet/in.h>
 
-struct udp_socket *UdpTimedSocket(struct ocx *ocx);
-ssize_t UdpTimedRx(struct ocx *, const struct udp_socket *,
-    sa_family_t fam,
-    struct sockaddr_storage *, socklen_t *,
-    struct timestamp *,
-    void *, ssize_t len,
-    double tmo);
-ssize_t Udp_Send(struct ocx *, const struct udp_socket *,
-    const void *sa, socklen_t, const void *ptr, ssize_t);
+#include "ntimed.h"
 
+int
+SA_Equal(const void *sa1, size_t sl1, const void *sa2, size_t sl2)
+{
+	const struct sockaddr *s1, *s2;
+	const struct sockaddr_in *s41, *s42;
+	const struct sockaddr_in6 *s61, *s62;
+
+	AN(sa1);
+	AN(sa2);
+	assert(sl1 >= sizeof(struct sockaddr));
+	assert(sl2 >= sizeof(struct sockaddr));
+
+	s1 = sa1;
+	s2 = sa2;
+	if (s1->sa_family != s2->sa_family)
+		return (0);
+
+	if (s1->sa_family == AF_INET) {
+		assert(sl1 >= sizeof(struct sockaddr_in));
+		assert(sl2 >= sizeof(struct sockaddr_in));
+		s41 = sa1;
+		s42 = sa2;
+		if (s41->sin_port != s42->sin_port)
+			return (0);
+		if (memcmp(&s41->sin_addr, &s42->sin_addr,
+		      sizeof s41->sin_addr))
+			return (0);
+		return (1);
+	}
+
+	if (s1->sa_family == AF_INET6) {
+		assert(sl1 >= sizeof(struct sockaddr_in6));
+		assert(sl2 >= sizeof(struct sockaddr_in6));
+		s61 = sa1;
+		s62 = sa2;
+		if (s61->sin6_port != s62->sin6_port)
+			return (0);
+		if (s61->sin6_scope_id != s62->sin6_scope_id)
+			return (0);
+		if (memcmp(&s61->sin6_addr, &s62->sin6_addr,
+		    sizeof s61->sin6_addr))
+			return (0);
+		return (1);
+	}
+	return (0);
+}

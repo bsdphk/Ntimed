@@ -52,7 +52,7 @@
  *
  * About this implementation:
  *
- * This is a very naiive implementation spitting things out to stdout/stderr,
+ * This is a very naive implementation spitting things out to stdout/stderr,
  * knowing that we are a single threaded program.
  *
  * XXX: Pull in sbufs to do it right.

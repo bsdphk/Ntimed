@@ -46,6 +46,9 @@ static double adj_offset = 0;
 static double adj_duration = 0;
 static double adj_freq = 0;
 
+static uintptr_t ticker;
+static struct todolist *kt_tdl;
+
 // #undef CLOCK_REALTIME		/* Test old unix code */
 
 /**********************************************************************
@@ -70,7 +73,7 @@ static double adj_freq = 0;
  */
 
 static void
-kt_setfreq(double frequency)
+kt_setfreq(struct ocx *ocx, double frequency)
 {
 	struct timex tx;
 	int i;
@@ -90,46 +93,47 @@ kt_setfreq(double frequency)
 	tx.freq = (long)floor(frequency * (65536 * 1e6));
 	errno = 0;
 	i = ntp_adjtime(&tx);
+	Put(ocx, OCX_TRACE, "KERNPLL %.6e %d\n", frequency, i);
 	/* XXX: what is the correct error test here ? */
 	assert(i >= 0);
 }
 
 static enum todo_e __match_proto__(todo_f)
-kt_pll(struct ocx *ocx, struct todolist *tdl, void *priv)
+kt_ticker(struct ocx *ocx, struct todolist *tdl, void *priv)
 {
-	double d, freq;
-	struct timestamp ts;
-	char buf[40];
 
 	(void)ocx;
 	AN(tdl);
 	AZ(priv);
-	freq = adj_freq;
-	if (adj_duration > 0.0) {
-		d = adj_offset / adj_duration;
-		freq += d;
-		adj_offset -= d;
-		adj_duration -= 1.0;
-	}
-	TB_Now(&ts);
-	TS_Format(buf, sizeof buf, &ts);
-	Put(ocx, OCX_TRACE, "KERNTIME_PLL %s %.6e %.6e %.3e %.6e\n",
-	    buf, adj_freq, adj_offset, adj_duration, freq);
-	kt_setfreq(freq);
+	kt_setfreq(ocx, adj_freq);
+	ticker = 0;
 	return (TODO_OK);
 }
 
 static void __match_proto__(tb_adjust_f)
 kt_adjust(struct ocx *ocx, double offset, double duration, double frequency)
 {
+	double freq;
 
 	(void)ocx;
+	assert(duration >= 0.0);
+
+	if (ticker)
+		TODO_Cancel(kt_tdl, &ticker);
 
 	adj_offset = offset;
 	adj_duration = floor(duration);
 	if (adj_offset > 0.0 && adj_duration == 0.0)
 		adj_duration = 1.0;
 	adj_freq = frequency;
+
+	freq = adj_freq;
+	if (adj_duration > 0.0)
+		freq += adj_offset / adj_duration;
+	kt_setfreq(ocx, freq);
+	if (adj_duration > 0.0)
+		ticker = TODO_ScheduleRel(kt_tdl, kt_ticker, NULL,
+		    adj_duration, 0.0, "KT_TICK");
 }
 
 /**********************************************************************/
@@ -229,18 +233,15 @@ kt_sleep(double dur)
 void
 Time_Unix(struct todolist *tdl)
 {
-	struct timestamp ts;
 
+	AN(tdl);
 	TB_Step = kt_step;
 	TB_Adjust = kt_adjust;
 	TB_Sleep = kt_sleep;
 	TB_Now = kt_now;
+	kt_tdl = tdl;
 
-	/* Aim the userland PLL wrangler at 125msec before the second */
-	TB_Now(&ts);
-	ts.sec += 1;
-	ts.frac = 14ULL << 60ULL;
-	(void)TODO_ScheduleAbs(tdl, kt_pll, NULL, &ts, 1.0, "SIMPLL");
+	/* XXX: test if we have perms */
 }
 
 /**********************************************************************

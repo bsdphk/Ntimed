@@ -89,6 +89,10 @@ extern pll_f *PLL;
 
 void PLL_Init(void);
 
+/* suckaddr.c -- Sockaddr utils ***************************************/
+
+int SA_Equal(const void *sa1, size_t sl1, const void *sa2, size_t sl2);
+
 /* time_sim.c -- Simulated timebase ***********************************/
 
 extern double Time_Sim_delta;
@@ -145,11 +149,16 @@ typedef enum todo_e todo_f(struct ocx *, struct todolist *, void *priv);
 
 struct todolist *TODO_NewList(void);
 
-struct todo *TODO_ScheduleRel(struct todolist *, todo_f *func, void *priv,
-    double when, double repeat, const char *fmt, ...);
-struct todo *TODO_ScheduleAbs(struct todolist *, todo_f *func, void *priv,
-    const struct timestamp *when, double repeat, const char *fmt, ...);
+uintptr_t TODO_ScheduleRel(struct todolist *,
+    todo_f *func, void *priv,
+    double when, double repeat,
+    const char *fmt, ...) __printflike(6, 7);
+uintptr_t TODO_ScheduleAbs(struct todolist *,
+    todo_f *func, void *priv,
+    const struct timestamp *when, double repeat,
+    const char *fmt, ...) __printflike(6, 7);
 enum todo_e TODO_Run(struct ocx *ocx, struct todolist *);
+void TODO_Cancel(struct todolist *tdl, uintptr_t *);
 
 /* combine_delta.c -- Source Combiner based on delta-pdfs *************/
 

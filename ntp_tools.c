@@ -82,13 +82,13 @@ NTP_Tool_Format(char *p, ssize_t len, const struct ntp_packet *pkt)
 
 	e = p + len;
 
-	p += snprintf(p, e - p, "[%u", pkt->ntp_leap);
+	p += snprintf(p, e - p, "[%d", pkt->ntp_leap);
 	assert(p < e);
 
 	p += snprintf(p, e - p, " %u", pkt->ntp_version);
 	assert(p < e);
 
-	p += snprintf(p, e - p, " %u", pkt->ntp_mode);
+	p += snprintf(p, e - p, " %d", pkt->ntp_mode);
 	assert(p < e);
 
 	p += snprintf(p, e - p, " %3u", pkt->ntp_stratum);
@@ -196,6 +196,7 @@ NTP_Tool_Scan(struct ntp_packet *pkt, const char *buf)
 	if (d_fields[6] != 0.0) {
 		pkt->ts_rx = pkt->ntp_transmit;
 		TS_Add(&pkt->ts_rx, d_fields[6]);
-	}
+	} else
+		INIT_OBJ(&pkt->ts_rx, TIMESTAMP_MAGIC);
 	return (0);
 }

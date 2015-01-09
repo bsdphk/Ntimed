@@ -133,7 +133,7 @@ NTP_Peer_Poll(struct ocx *ocx, const struct udp_socket *usc,
 		(void)TB_Now(&t1);
 		d = TS_Diff(&t1, &t0);
 
-		i = UdpTimedRx(ocx, usc, &rss, &rssl, &t2,
+		i = UdpTimedRx(ocx, usc, np->sa->sa_family, &rss, &rssl, &t2,
 		    buf, sizeof buf, tmo - d);
 
 		if (i == 0)
@@ -149,7 +149,7 @@ NTP_Peer_Poll(struct ocx *ocx, const struct udp_socket *usc,
 		}
 
 		/* Ignore packets from other hosts */
-		if (np->sa_len != rssl || memcmp(np->sa, &rss, rssl))
+		if (!SA_Equal(np->sa, np->sa_len, &rss, rssl))
 			continue;
 
 		AN(NTP_Packet_Unpack(np->rx_pkt, buf, i));

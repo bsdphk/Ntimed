@@ -28,6 +28,8 @@
  *
  * This is a simple "TODO-list" scheduler for calling things at certain
  * times.  Jobs can be one-shot or repeated and repeated jobs can abort.
+ *
+ * For ease of debugging, TODO jobs have a name.
  */
 
 #include <stdarg.h>
@@ -81,13 +83,30 @@ todo_insert(struct todolist *tdl, struct todo *tp)
 }
 
 /**********************************************************************
- * Return a pointer to the todo item, so the API can support cancellation.
- * (Cancellation will be necessary for NTP-peer removal)
- *
- * For ease of debugging, TODO jobs have a name.
  */
 
-struct todo *
+void
+TODO_Cancel(struct todolist *tdl, uintptr_t *tp)
+{
+	struct todo *tp2;
+
+	CHECK_OBJ_NOTNULL(tdl, TODOLIST_MAGIC);
+	AN(tp);
+	AN(*tp);
+
+	TAILQ_FOREACH(tp2, &tdl->todolist, list)
+		if ((uintptr_t)tp2 == *tp)
+			break;
+	CHECK_OBJ_NOTNULL(tp2, TODO_MAGIC);
+	TAILQ_REMOVE(&tdl->todolist, tp2, list);
+	FREE_OBJ(tp2);
+	*tp = 0;
+}
+
+/**********************************************************************
+ */
+
+uintptr_t
 TODO_ScheduleAbs(struct todolist *tdl, todo_f *func, void *priv,
     const struct timestamp *when, double repeat, const char *fmt, ...)
 {
@@ -110,10 +129,10 @@ TODO_ScheduleAbs(struct todolist *tdl, todo_f *func, void *priv,
 	(void)vsnprintf(tp->what, sizeof tp->what, fmt, ap);
 	va_end(ap);
 	todo_insert(tdl, tp);
-	return (tp);
+	return ((uintptr_t)tp);
 }
 
-struct todo *
+uintptr_t
 TODO_ScheduleRel(struct todolist *tdl, todo_f *func, void *priv,
     double when, double repeat, const char *fmt, ...)
 {
@@ -137,7 +156,7 @@ TODO_ScheduleRel(struct todolist *tdl, todo_f *func, void *priv,
 	(void)vsnprintf(tp->what, sizeof tp->what, fmt, ap);
 	va_end(ap);
 	todo_insert(tdl, tp);
-	return (tp);
+	return ((uintptr_t)tp);
 }
 
 /**********************************************************************

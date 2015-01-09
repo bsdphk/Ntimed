@@ -86,6 +86,7 @@ UdpTimedSocket(struct ocx *ocx)
 
 ssize_t
 UdpTimedRx(struct ocx *ocx, const struct udp_socket *usc,
+    sa_family_t fam,
     struct sockaddr_storage *ss, socklen_t *sl,
     struct timestamp *ts, void *buf, ssize_t len, double tmo)
 {
@@ -94,9 +95,9 @@ UdpTimedRx(struct ocx *ocx, const struct udp_socket *usc,
 	struct cmsghdr *cmsg;
 	u_char ctrl[1024];
 	ssize_t rl;
-	int i, j;
+	int i;
 	int tmo_msec;
-	struct pollfd pfd[2];
+	struct pollfd pfd[1];
 
 	CHECK_OBJ_NOTNULL(usc, UDP_SOCKET_MAGIC);
 	AN(ss);
@@ -105,18 +106,15 @@ UdpTimedRx(struct ocx *ocx, const struct udp_socket *usc,
 	AN(buf);
 	assert(len > 0);
 
+	if (fam == AF_INET)
+		pfd[0].fd = usc->fd4;
+	else if (fam == AF_INET6)
+		pfd[0].fd = usc->fd6;
+	else
+		WRONG("Wrong family in UdpTimedRx");
 
-	j = 0;
-	if (usc->fd4 >= 0) {
-		pfd[j].fd = usc->fd4;
-		pfd[j].events = POLLIN;
-		pfd[j++].revents = 0;
-	}
-	if (usc->fd6 >= 0) {
-		pfd[j].fd = usc->fd6;
-		pfd[j].events = POLLIN;
-		pfd[j++].revents = 0;
-	}
+	pfd[0].events = POLLIN;
+	pfd[0].revents = 0;
 
 	if (tmo == 0.0) {
 		tmo_msec = -1;
@@ -125,13 +123,16 @@ UdpTimedRx(struct ocx *ocx, const struct udp_socket *usc,
 		if (tmo_msec <= 0)
 			tmo_msec = 0;
 	}
-	i = poll(pfd, j, tmo_msec);
+	i = poll(pfd, 1, tmo_msec);
 
 	if (i < 0)
 		Fail(ocx, 1, "poll(2) failed\n");
 
 	if (i == 0)
 		return (0);
+
+	/* Grab a timestamp in case none of the SCM_TIMESTAMP* works */
+	TB_Now(ts);
 
 	memset(&msg, 0, sizeof msg);
 	msg.msg_name = (void*)ss;
@@ -145,18 +146,16 @@ UdpTimedRx(struct ocx *ocx, const struct udp_socket *usc,
 	memset(ctrl, 0, sizeof ctrl);
 	cmsg = (void*)ctrl;
 
-	for (i = 0; i < j; i++)
-		if (pfd[i].revents & POLLIN)
-			break;
-
-	if (i == j)
-		return (0);
-
-	rl = recvmsg(pfd[i].fd, &msg, 0);
+	rl = recvmsg(pfd[0].fd, &msg, 0);
 	if (rl <= 0)
 		return (rl);
 
 	*sl = msg.msg_namelen;
+
+	if (msg.msg_flags != 0) {
+		Debug(ocx, "msg_flags = 0x%x", msg.msg_flags);
+		return (-1);
+	}
 
 	for(;cmsg != NULL; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 #ifdef SCM_TIMESTAMPNS
