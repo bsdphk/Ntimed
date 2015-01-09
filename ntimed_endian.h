@@ -35,7 +35,7 @@
 /* Alignment-agnostic encode/decode bytestream to/from little/big endian. */
 
 static __inline uint16_t
-be16dec(const void *pp)
+Be16dec(const void *pp)
 {
 	uint8_t const *p = (uint8_t const *)pp;
 
@@ -43,7 +43,7 @@ be16dec(const void *pp)
 }
 
 static __inline uint32_t
-be32dec(const void *pp)
+Be32dec(const void *pp)
 {
 	uint8_t const *p = (uint8_t const *)pp;
 
@@ -51,7 +51,7 @@ be32dec(const void *pp)
 }
 
 static __inline void
-be16enc(void *pp, uint16_t u)
+Be16enc(void *pp, uint16_t u)
 {
 	uint8_t *p = (uint8_t *)pp;
 
@@ -60,7 +60,7 @@ be16enc(void *pp, uint16_t u)
 }
 
 static __inline void
-be32enc(void *pp, uint32_t u)
+Be32enc(void *pp, uint32_t u)
 {
 	uint8_t *p = (uint8_t *)pp;
 

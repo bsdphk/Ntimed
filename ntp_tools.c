@@ -180,7 +180,7 @@ NTP_Tool_Scan(struct ntp_packet *pkt, const char *buf)
 	pkt->ntp_precision = (int8_t)floor(d_fields[0]);
 	TS_Double(&pkt->ntp_delay, d_fields[1]);
 	TS_Double(&pkt->ntp_dispersion, d_fields[2]);
-	be32enc(pkt->ntp_refid, u_fields[5]);
+	Be32enc(pkt->ntp_refid, u_fields[5]);
 
 	TS_Nanosec(&pkt->ntp_origin, u_fields[6], u_fields[7]);
 

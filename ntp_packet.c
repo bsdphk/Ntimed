@@ -78,8 +78,8 @@ ntp64_2ts(struct timestamp *ts, const uint8_t *ptr)
 {
 
 	INIT_OBJ(ts, TIMESTAMP_MAGIC);
-	ts->sec = be32dec(ptr) - NTP_UNIX;
-	ts->frac = (uint64_t)be32dec(ptr + 4) << 32ULL;
+	ts->sec = Be32dec(ptr) - NTP_UNIX;
+	ts->frac = (uint64_t)Be32dec(ptr + 4) << 32ULL;
 }
 
 static void
@@ -87,8 +87,8 @@ ntp32_2ts(struct timestamp *ts, const uint8_t *ptr)
 {
 
 	INIT_OBJ(ts, TIMESTAMP_MAGIC);
-	ts->sec = be16dec(ptr);
-	ts->frac = (uint64_t)be16dec(ptr + 2) << 48ULL;
+	ts->sec = Be16dec(ptr);
+	ts->frac = (uint64_t)Be16dec(ptr + 2) << 48ULL;
 }
 
 
@@ -136,8 +136,8 @@ ts_2ntp32(uint8_t *dst, const struct timestamp *ts)
 
 	CHECK_OBJ_NOTNULL(ts, TIMESTAMP_MAGIC);
 	assert(ts->sec < 65536);
-	be16enc(dst, ts->sec);
-	be16enc(dst + 2, ts->frac >> 48ULL);
+	Be16enc(dst, ts->sec);
+	Be16enc(dst + 2, ts->frac >> 48ULL);
 }
 
 static void
@@ -145,8 +145,8 @@ ts_2ntp64(uint8_t *dst, const struct timestamp *ts)
 {
 
 	CHECK_OBJ_NOTNULL(ts, TIMESTAMP_MAGIC);
-	be32enc(dst, ts->sec + NTP_UNIX);
-	be32enc(dst + 4, ts->frac >> 32ULL);
+	Be32enc(dst, ts->sec + NTP_UNIX);
+	Be32enc(dst + 4, ts->frac >> 32ULL);
 }
 
 ssize_t
