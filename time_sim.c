@@ -69,12 +69,13 @@ st_Now(struct timestamp *storage)
 
 /**********************************************************************/
 
-static void
+static int
 st_Sleep(double dur)
 {
 
 	TS_Add(&st_now, dur);
 	Time_Sim_delta += dur * freq;
+	return (0);
 }
 
 /**********************************************************************/

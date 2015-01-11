@@ -169,11 +169,15 @@ TODO_Run(struct ocx *ocx, struct todolist *tdl)
 	struct todo *tp;
 	enum todo_e ret = TODO_OK;
 	char buf[40];
+	int i;
 
 	CHECK_OBJ_NOTNULL(tdl, TODOLIST_MAGIC);
 	while(!TAILQ_EMPTY(&tdl->todolist)) {
 		tp = TAILQ_FIRST(&tdl->todolist);
-		TS_SleepUntil(&tp->when);
+		i = TS_SleepUntil(&tp->when);
+		if (i == 1)
+			return (TODO_INTR);
+		AZ(i);
 		TS_Format(buf, sizeof buf, &tp->when);
 		Put(ocx, OCX_TRACE, "Now %s %s\n", buf, tp->what);
 		ret = tp->func(ocx, tdl, tp->priv);

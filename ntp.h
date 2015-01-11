@@ -47,6 +47,12 @@ enum ntp_leap {
 #undef NTP_LEAP
 };
 
+enum ntp_state {
+#define NTP_STATE(n, l, u, d)	NTP_STATE_##u = n,
+#include "ntp_tbl.h"
+#undef NTP_STATE
+};
+
 /* ntp_packet.c -- [De]Serialisation **********************************/
 
 struct ntp_packet {
@@ -108,6 +114,8 @@ struct ntp_peer {
 	// For ntp_peerset.c
 	TAILQ_ENTRY(ntp_peer)		list;
 	struct ntp_group		*group;
+	enum ntp_state			state;
+	const struct ntp_peer		*other;
 };
 
 struct ntp_peer *NTP_Peer_New(const char *name, const void *, unsigned);
@@ -119,10 +127,9 @@ int NTP_Peer_Poll(struct ocx *, const struct udp_socket *,
 /* ntp_peerset.c -- Peer set management ****************************/
 
 struct ntp_peerset *NTP_PeerSet_New(struct ocx *);
-void NTP_PeerSet_AddPeer(struct ocx *ocx, struct ntp_peerset *npl,
-    struct ntp_peer *np);
-int NTP_PeerSet_Add(struct ocx *, struct ntp_peerset *,
-    const char *hostname);
+void NTP_PeerSet_AddSim(struct ocx *, struct ntp_peerset *,
+    const char *hostname, const char *ip);
+int NTP_PeerSet_Add(struct ocx *, struct ntp_peerset *, const char *hostname);
 void NTP_PeerSet_Poll(struct ocx *, struct ntp_peerset *, struct udp_socket *,
     struct todolist *);
 
@@ -130,7 +137,7 @@ struct ntp_peer *NTP_PeerSet_Iter0(const struct ntp_peerset *);
 struct ntp_peer *NTP_PeerSet_IterN(const struct ntp_peerset *,
     const struct ntp_peer *);
 
-#define NTP_PeerSet_Foreach(var, npl) \
-	for(var = NTP_PeerSet_Iter0(npl); \
+#define NTP_PeerSet_Foreach(var, nps) \
+	for(var = NTP_PeerSet_Iter0(nps); \
 	var != NULL; \
-	var = NTP_PeerSet_IterN(npl, var))
+	var = NTP_PeerSet_IterN(nps, var))

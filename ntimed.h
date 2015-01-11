@@ -113,7 +113,7 @@ struct timestamp {
 	uint64_t	frac;
 };
 
-typedef void tb_sleep_f(double dur);
+typedef int tb_sleep_f(double dur);
 typedef struct timestamp *tb_now_f(struct timestamp *);
 typedef void tb_step_f(struct ocx *, double offset);
 typedef void tb_adjust_f(struct ocx *, double offset, double duration,
@@ -131,7 +131,7 @@ struct timestamp *TS_Nanosec(struct timestamp *storage,
 
 struct timestamp *TS_Double(struct timestamp *storage, double);
 double TS_Diff(const struct timestamp *t1, const struct timestamp *t2);
-void TS_SleepUntil(const struct timestamp *);
+int TS_SleepUntil(const struct timestamp *);
 void TS_Format(char *buf, ssize_t len, const struct timestamp *ts);
 
 void TS_RunTest(struct ocx *ocx);
@@ -140,6 +140,7 @@ void TS_RunTest(struct ocx *ocx);
 
 
 enum todo_e {
+	TODO_INTR	= -2,	// Signal received
 	TODO_FAIL	= -1,	// Break out of TODO_Run()
 	TODO_OK		=  0,
 	TODO_DONE	=  1,	// Stop repeating me

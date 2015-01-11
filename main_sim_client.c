@@ -156,7 +156,6 @@ SimFile_Open(struct ocx *ocx, const char *fn, struct todolist *tdl,
     struct ntp_peerset *npl)
 {
 	struct sim_file *sf;
-	struct ntp_peer *np;
 	char buf[BUFSIZ];
 	char buf2[BUFSIZ];
 	char buf3[BUFSIZ];
@@ -205,11 +204,7 @@ SimFile_Open(struct ocx *ocx, const char *fn, struct todolist *tdl,
 			if (sscanf(buf, "# Peer %s %s", buf2, buf3) != 2)
 				Fail(ocx, 0, "Expected '# Peer' line");
 
-			np = NTP_Peer_NewLookup(ocx, buf3);
-			AN(np);
-			np->hostname = strdup(buf2);
-			AN(np->hostname);
-			NTP_PeerSet_AddPeer(ocx, npl, np);
+			NTP_PeerSet_AddSim(ocx, npl, buf2, buf3);
 			if (++fpeer == sf->n_peer)
 				s++;
 			break;

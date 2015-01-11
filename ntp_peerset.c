@@ -23,6 +23,19 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * A peer-set is the total set of NTP servers we keep track of.
+ *
+ * The set is composed of groups, each of which is all the IP# we
+ * get from resolving a single argument.
+ *
+ * Within each group we poll a maximum of one ${param} servers,
+ * picking the best.
+ *
+ * Across the set we keep an hairy eyeball for servers appearing
+ * more than once, because it would deceive our quorum.  Spotting
+ * the same IP# is trivial, multihomed servers can be spotted on
+ * {stratum,refid,reftime} triplet.
+ *
  */
 
 #include <math.h>
@@ -65,15 +78,15 @@ struct ntp_peerset {
 struct ntp_peerset *
 NTP_PeerSet_New(struct ocx *ocx)
 {
-	struct ntp_peerset *npl;
+	struct ntp_peerset *nps;
 
 	(void)ocx;
-	ALLOC_OBJ(npl, NTP_PEERSET_MAGIC);
-	AN(npl);
+	ALLOC_OBJ(nps, NTP_PEERSET_MAGIC);
+	AN(nps);
 
-	TAILQ_INIT(&npl->head);
-	TAILQ_INIT(&npl->group);
-	return (npl);
+	TAILQ_INIT(&nps->head);
+	TAILQ_INIT(&nps->group);
+	return (nps);
 }
 
 /**********************************************************************
@@ -81,112 +94,164 @@ NTP_PeerSet_New(struct ocx *ocx)
  */
 
 struct ntp_peer *
-NTP_PeerSet_Iter0(const struct ntp_peerset *npl)
+NTP_PeerSet_Iter0(const struct ntp_peerset *nps)
 {
 
-	CHECK_OBJ_NOTNULL(npl, NTP_PEERSET_MAGIC);
-	return (TAILQ_FIRST(&npl->head));
+	CHECK_OBJ_NOTNULL(nps, NTP_PEERSET_MAGIC);
+	return (TAILQ_FIRST(&nps->head));
 }
 
 struct ntp_peer *
-NTP_PeerSet_IterN(const struct ntp_peerset *npl, const struct ntp_peer *np)
+NTP_PeerSet_IterN(const struct ntp_peerset *nps, const struct ntp_peer *np)
 {
 
-	CHECK_OBJ_NOTNULL(npl, NTP_PEERSET_MAGIC);
+	CHECK_OBJ_NOTNULL(nps, NTP_PEERSET_MAGIC);
 	CHECK_OBJ_NOTNULL(np, NTP_PEER_MAGIC);
 	return (TAILQ_NEXT(np, list));
 }
 
 /**********************************************************************/
 
-void
-NTP_PeerSet_AddPeer(struct ocx *ocx, struct ntp_peerset *npl,
-    struct ntp_peer *np)
-{
-
-	(void)ocx;
-	CHECK_OBJ_NOTNULL(npl, NTP_PEERSET_MAGIC);
-	CHECK_OBJ_NOTNULL(np, NTP_PEER_MAGIC);
-	TAILQ_INSERT_TAIL(&npl->head, np, list);
-	npl->npeer++;
-}
-
-/**********************************************************************/
-
-int
-NTP_PeerSet_Add(struct ocx *ocx, struct ntp_peerset *npl,
-    const char *hostname)
+static int
+ntp_peerset_fillgroup(struct ocx *ocx, struct ntp_peerset *nps,
+    struct ntp_group *ng, const char *lookup)
 {
 	struct addrinfo hints, *res, *res0;
-	int error, n;
-	struct ntp_peer *np;
-	struct ntp_group *ng;
+	int error, n = 0;
+	struct ntp_peer *np, *np2;
 
-	CHECK_OBJ_NOTNULL(npl, NTP_PEERSET_MAGIC);
+	CHECK_OBJ_NOTNULL(nps, NTP_PEERSET_MAGIC);
+	CHECK_OBJ_NOTNULL(ng, NTP_GROUP_MAGIC);
+
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
-	error = getaddrinfo(hostname, "ntp", &hints, &res0);
+	error = getaddrinfo(lookup, "ntp", &hints, &res0);
 	if (error)
 		Fail(ocx, 1, "hostname '%s', port 'ntp': %s\n",
-		    hostname, gai_strerror(error));
-	ALLOC_OBJ(ng, NTP_GROUP_MAGIC);
-	AN(ng);
-	n = 0;
+		    lookup, gai_strerror(error));
 	for (res = res0; res; res = res->ai_next) {
-		np = NTP_Peer_New(hostname, res->ai_addr, res->ai_addrlen);
-		// XXX: duplicate check
-		TAILQ_INSERT_TAIL(&npl->head, np, list);
-		npl->npeer++;
+		if (res->ai_family != AF_INET && res->ai_family != AF_INET6)
+			continue;
+		np = NTP_Peer_New(ng->hostname, res->ai_addr, res->ai_addrlen);
+		AN(np);
+		TAILQ_FOREACH(np2, &nps->head, list)
+			if (SA_Equal(np->sa, np->sa_len, np2->sa, np2->sa_len))
+				break;
+		if (np2 != NULL) {
+			/* All duplicates point to the same "master" */
+			np->state = NTP_STATE_DUPLICATE;
+			np->other = np2->other;
+			if (np->other == NULL)
+				np->other = np2;
+			TAILQ_INSERT_TAIL(&nps->head, np, list);
+			Debug(ocx, "Peer {%s %s} is duplicate of {%s %s}\n",
+			    np->hostname, np->ip, np2->hostname, np2->ip);
+		} else {
+			np->state = NTP_STATE_NEW;
+			TAILQ_INSERT_HEAD(&nps->head, np, list);
+		}
+		nps->npeer++;
 		np->group = ng;
 		ng->npeer++;
 		n++;
 	}
 	freeaddrinfo(res0);
-	if (ng->npeer == 0) {
-		FREE_OBJ(ng);
-	} else {
-		ng->hostname = strdup(hostname);
-		AN(ng->hostname);
-		TAILQ_INSERT_TAIL(&npl->group, ng, list);
-		npl->ngroup++;
-	}
 	return (n);
+}
+
+/**********************************************************************/
+
+static struct ntp_group *
+ntp_peerset_add_group(struct ntp_peerset *nps, const char *name)
+{
+	struct ntp_group *ng;
+
+	ALLOC_OBJ(ng, NTP_GROUP_MAGIC);
+	AN(ng);
+	ng->hostname = strdup(name);
+	AN(ng->hostname);
+	TAILQ_INSERT_TAIL(&nps->group, ng, list);
+	nps->ngroup++;
+	return (ng);
+}
+
+/**********************************************************************
+ * Add a peer with a specific hostname+ip combination without actually
+ * resolving the hostname.
+ */
+
+void
+NTP_PeerSet_AddSim(struct ocx *ocx, struct ntp_peerset *nps,
+    const char *hostname, const char *ip)
+{
+	struct ntp_group *ng;
+
+	CHECK_OBJ_NOTNULL(nps, NTP_PEERSET_MAGIC);
+	TAILQ_FOREACH(ng, &nps->group, list)
+		if (!strcasecmp(ng->hostname, hostname))
+			break;
+	if (ng == NULL)
+		ng = ntp_peerset_add_group(nps, hostname);
+	assert(ntp_peerset_fillgroup(ocx, nps, ng, ip) == 1);
+}
+
+/**********************************************************************
+ * Create a new group and add whatever peers its hostname resolves to
+ */
+
+int
+NTP_PeerSet_Add(struct ocx *ocx, struct ntp_peerset *nps, const char *hostname)
+{
+	struct ntp_group *ng;
+
+	CHECK_OBJ_NOTNULL(nps, NTP_PEERSET_MAGIC);
+
+	TAILQ_FOREACH(ng, &nps->group, list)
+		if (!strcasecmp(ng->hostname, hostname))
+			Fail(ocx, 0, "hostname %s is duplicated\n", hostname);
+
+	ng = ntp_peerset_add_group(nps, hostname);
+
+	if (ntp_peerset_fillgroup(ocx, nps, ng, hostname) == 0)
+		Fail(ocx, 0, "hostname %s no IP# found.\n", hostname);
+
+	return (ng->npeer);
 }
 
 /**********************************************************************
  * This function is responsible for polling the peers in the set.
  */
 
-static enum todo_e
+static enum todo_e __match_proto__(todo_f)
 ntp_peerset_poll(struct ocx *ocx, struct todolist *tdl, void *priv)
 {
-	struct ntp_peerset *npl;
+	struct ntp_peerset *nps;
 	struct ntp_peer *np;
 	double d, dt;
 
 	(void)ocx;
-	CAST_OBJ_NOTNULL(npl, priv, NTP_PEERSET_MAGIC);
+	CAST_OBJ_NOTNULL(nps, priv, NTP_PEERSET_MAGIC);
 	AN(tdl);
 
-	np = TAILQ_FIRST(&npl->head);
+	np = TAILQ_FIRST(&nps->head);
 	if (np == NULL)
 		return(TODO_DONE);
 
 	CHECK_OBJ_NOTNULL(np, NTP_PEER_MAGIC);
-	TAILQ_REMOVE(&npl->head, np, list);
-	TAILQ_INSERT_TAIL(&npl->head, np, list);
+	TAILQ_REMOVE(&nps->head, np, list);
+	TAILQ_INSERT_TAIL(&nps->head, np, list);
 
-	d = npl->poll_period / npl->npeer;
-	if (npl->t0 < npl->init_duration) {
+	d = nps->poll_period / nps->npeer;
+	if (nps->t0 < nps->init_duration) {
 		dt = exp(
-		    log(npl->init_duration) / (npl->init_packets * npl->npeer));
-		if (npl->t0 * dt < npl->init_duration)
-			d = npl->t0 * dt - npl->t0;
+		    log(nps->init_duration) / (nps->init_packets * nps->npeer));
+		if (nps->t0 * dt < nps->init_duration)
+			d = nps->t0 * dt - nps->t0;
 	}
-	npl->t0 += d;
-	TODO_ScheduleRel(tdl, ntp_peerset_poll, npl, d, 0.0, "NTP_PeerSet");
-	if (NTP_Peer_Poll(ocx, npl->usc, np, 0.8)) {
+	nps->t0 += d;
+	TODO_ScheduleRel(tdl, ntp_peerset_poll, nps, d, 0.0, "NTP_PeerSet");
+	if (NTP_Peer_Poll(ocx, nps->usc, np, 0.8)) {
 		if (np->filter_func != NULL)
 			np->filter_func(ocx, np);
 	}
@@ -213,26 +278,37 @@ ntp_peerset_herd(struct ocx *ocx, struct todolist *tdl, void *priv)
 
 /**********************************************************************/
 
+static uintptr_t poll_hdl;
+static uintptr_t herd_hdl;
+
 void
-NTP_PeerSet_Poll(struct ocx *ocx, struct ntp_peerset *npl,
+NTP_PeerSet_Poll(struct ocx *ocx, struct ntp_peerset *nps,
     struct udp_socket *usc,
     struct todolist *tdl)
 {
+	struct ntp_peer *np;
 
 	(void)ocx;
-	CHECK_OBJ_NOTNULL(npl, NTP_PEERSET_MAGIC);
+	CHECK_OBJ_NOTNULL(nps, NTP_PEERSET_MAGIC);
 	AN(usc);
 	AN(tdl);
 
-	npl->usc = usc;
-	npl->t0 = 1.0;
-	npl->init_duration = 64.;
-	npl->init_packets = 6.;
-	npl->poll_period = 64.;
-	TODO_ScheduleRel(tdl, ntp_peerset_poll, npl, 0.0, 0.0,
+	TAILQ_FOREACH(np, &nps->head, list)
+		np->state = NTP_STATE_NEW;
+	nps->usc = usc;
+	nps->t0 = 1.0;
+	nps->init_duration = 64.;
+	nps->init_packets = 6.;
+	nps->poll_period = 64.;
+
+	if (poll_hdl != 0)
+		TODO_Cancel(tdl, &poll_hdl);
+	poll_hdl = TODO_ScheduleRel(tdl, ntp_peerset_poll, nps, 0.0, 0.0,
 		"NTP_PeerSet Poll");
-	if (npl->ngroup > 0)
-		TODO_ScheduleRel(tdl, ntp_peerset_herd, npl,
-		    15. * 60. / npl->ngroup, 0.0, "NTP_PeerSet Herd");
+
+	if (herd_hdl != 0)
+		TODO_Cancel(tdl, &herd_hdl);
+	herd_hdl = TODO_ScheduleRel(tdl, ntp_peerset_herd, nps,
+	    15. * 60. / nps->ngroup, 0.0, "NTP_PeerSet Herd");
 
 }

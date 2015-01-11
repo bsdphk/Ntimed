@@ -37,13 +37,23 @@ NTP_MODE(5,	bcast,		BCAST)
 NTP_MODE(6,	ctrl,		CTRL)
 NTP_MODE(7,	mode7,		MODE7)
 #endif
-/*lint -restore */
 
-/*lint -save -e525 -e539 */
 #ifdef NTP_LEAP
 NTP_LEAP(0,	none,		NONE)
 NTP_LEAP(1,	ins,		INS)
 NTP_LEAP(2,	del,		DEL)
 NTP_LEAP(3,	unknown,	UNKNOWN)
 #endif
+
+#ifdef NTP_STATE
+NTP_STATE(0,	new,		NEW,		"Newly configured peer.")
+NTP_STATE(1,	active,		ACTIVE,		"Good (and used) peer.")
+NTP_STATE(2,	available,	AVAILABLE,	"Not good enough peer.")
+NTP_STATE(3,	unsynchronized,	UNSYNCHRONIZED, "Bad peer.")
+NTP_STATE(4,	unresponsive,	UNRESPONSIVE,	"Peer does not respond.")
+NTP_STATE(5,	unreachable,	UNREACHABLE,	"Peer cannot be reached.")
+NTP_STATE(6,	multihome,	MULTIHOME,	"Copy of multihomed peer.")
+NTP_STATE(7,	duplicate,	DUPLICATE,	"Duplicate peer.")
+#endif
+
 /*lint -restore */

@@ -220,12 +220,17 @@ kt_now(struct timestamp *storage)
 
 /**********************************************************************/
 
-static void __match_proto__(tb_sleep_f)
+static int __match_proto__(tb_sleep_f)
 kt_sleep(double dur)
 {
 	struct pollfd fds[1];
+	int i;
 
-	AZ(poll(fds, 0, (int)floor(dur * 1e3)));
+	i = poll(fds, 0, (int)floor(dur * 1e3));
+	if (i < 0 && errno == EINTR)
+		return (1);
+	AZ(i);
+	return (0);
 }
 
 /**********************************************************************/

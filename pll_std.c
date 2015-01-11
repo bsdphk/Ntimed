@@ -44,6 +44,7 @@ static struct timestamp pll_last_time;
 static int pll_mode;
 static double pll_a, pll_b;
 static struct timestamp pll_t0;
+static int pll_generation;
 
 static void __match_proto__(pll_f)
 pll_std(struct ocx *ocx, double offset, double weight)
@@ -57,6 +58,11 @@ pll_std(struct ocx *ocx, double offset, double weight)
 	dur = .0;
 	dt = 0;
 	used_a = used_b = 0;
+
+	if (pll_generation != TB_generation) {
+		pll_mode = 0;
+		pll_generation = TB_generation;
+	}
 
 	switch (pll_mode) {
 

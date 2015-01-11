@@ -49,6 +49,8 @@ struct ntp_filter {
 	double			alolo, ahihi;
 	double			navg;
 	double			trust;
+
+	int			generation;
 };
 
 static void __match_proto__(ntp_filter_f)
@@ -63,6 +65,12 @@ nf_filter(struct ocx *ocx, const struct ntp_peer *np)
 	char buf[256];
 
 	CAST_OBJ_NOTNULL(nf, np->filter_priv, NTP_FILTER_MAGIC);
+
+	if (nf->generation != TB_generation) {
+		nf->navg = 0;
+		nf->alo = nf->amid = nf->ahi = 0.0;
+		nf->alolo = nf->ahihi = 0.0;
+	}
 
 	rxp = np->rx_pkt;
 	CHECK_OBJ_NOTNULL(rxp, NTP_PACKET_MAGIC);

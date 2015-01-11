@@ -124,7 +124,7 @@ TS_Diff(const struct timestamp *t1, const struct timestamp *t2)
 
 /**********************************************************************/
 
-void
+int
 TS_SleepUntil(const struct timestamp *t)
 {
 	struct timestamp now;
@@ -132,8 +132,9 @@ TS_SleepUntil(const struct timestamp *t)
 
 	TB_Now(&now);
 	dt = TS_Diff(t, &now);
-	if (dt > 0.)
-		TB_Sleep(dt);
+	if (dt <= 0.)
+		return (0);
+	return (TB_Sleep(dt));
 }
 
 /**********************************************************************/
@@ -171,11 +172,12 @@ tb_now_f *TB_Now = tb_Now;
 
 /**********************************************************************/
 
-static void
+static int
 tb_Sleep(double dur)
 {
 	(void)dur;
 	WRONG("No TB_Sleep");
+	return (-1);
 }
 
 tb_sleep_f *TB_Sleep = tb_Sleep;
