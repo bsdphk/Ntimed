@@ -167,7 +167,7 @@ tb_Now(struct timestamp *storage)
 
 	(void)storage;
 	WRONG("No TB_Now");
-	return (NULL);
+	NEEDLESS_RETURN(NULL);
 }
 
 tb_now_f *TB_Now = tb_Now;
@@ -179,7 +179,7 @@ tb_Sleep(double dur)
 {
 	(void)dur;
 	WRONG("No TB_Sleep");
-	return (-1);
+	NEEDLESS_RETURN(-1);
 }
 
 tb_sleep_f *TB_Sleep = tb_Sleep;

@@ -79,7 +79,7 @@ getdst(enum ocx_chan chan)
 	if (chan == OCX_DEBUG)
 		return (stdout);
 	WRONG("Wrong ocx_chan");
-	return (NULL);
+	NEEDLESS_RETURN(NULL);
 }
 
 static void __match_proto__()

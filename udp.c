@@ -199,5 +199,5 @@ Udp_Send(struct ocx *ocx, const struct udp_socket *usc,
 		return (sendto(usc->fd6, buf, len, 0, ss, sl));
 
 	WRONG("Wrong AF_");
-	return (0);
+	NEEDLESS_RETURN(0);
 }

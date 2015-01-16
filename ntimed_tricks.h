@@ -85,6 +85,15 @@
  */
 #define __match_proto__(xxx)		/*lint -e{818} */
 
+/*
+ * Some functions never return, and there's nothing Turing can do about it.
+ * Some compilers think you should still include a final return(bla) in
+ * such functions, while other tools complain about unreachable code.
+ * Wrapping in a macro means we can shut the tools up.
+ */
+
+#define NEEDLESS_RETURN(foo)	return(foo)
+
 /**********************************************************************
  * Compiler tricks
  */
