@@ -75,7 +75,7 @@ SRCS='
 	udp.c
 '
 
-if make -v 2>&1 | grep -q GNU ; then
+if make -v 2>&1 | grep GNU > /dev/null 2>&1 ; then
 	echo "make(1) is GNU make."
 	BSD=false
 elif [ -f /usr/share/mk/bsd.prog.mk ] ; then

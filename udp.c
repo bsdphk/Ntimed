@@ -53,13 +53,6 @@ udp_sock(int fam)
 	if (fd < 0)
 		return (fd);
 
-#ifdef IP_RECVDSTADDR
-	i = 1;
-	if (setsockopt(fd, IPPROTO_IP, IP_RECVDSTADDR, &i, sizeof i) != 0) {
-		AZ(close(fd));
-		Fail(ocx, 1, "setsockopt(IP_RECVDSTADDR) failed");
-	}
-#endif
 #ifdef SO_TIMESTAMPNS
 	i = 1;
 	(void)setsockopt(fd, SOL_SOCKET, SO_TIMESTAMPNS, &i, sizeof i);
@@ -176,14 +169,6 @@ UdpTimedRx(struct ocx *ocx, const struct udp_socket *usc,
 			memcpy(&tv, CMSG_DATA(cmsg), sizeof tv);
 			(void)TS_Nanosec(ts, tv.tv_sec, tv.tv_usec * 1000LL);
 			continue;
-		}
-#endif
-#ifdef IP_RECVDSTADDR
-		if (cmsg->cmsg_level == IPPROTO_IP &&
-		    cmsg->cmsg_type == IP_RECVDSTADDR &&
-		    cmsg->cmsg_len == CMSG_LEN(sizeof(in_addr_t))) {
-			continue;
-			/* XXX */
 		}
 #endif
 		Debug(ocx, "RX-msg: %d %d %u ",
