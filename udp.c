@@ -182,7 +182,7 @@ UdpTimedRx(struct ocx *ocx, const struct udp_socket *usc,
 
 ssize_t
 Udp_Send(struct ocx *ocx, const struct udp_socket *usc,
-    const void *ss, socklen_t sl, const void *buf, ssize_t len)
+    const void *ss, socklen_t sl, const void *buf, size_t len)
 {
 	const struct sockaddr *sa;
 

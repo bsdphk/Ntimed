@@ -132,7 +132,7 @@ struct timestamp *TS_Nanosec(struct timestamp *storage,
 struct timestamp *TS_Double(struct timestamp *storage, double);
 double TS_Diff(const struct timestamp *t1, const struct timestamp *t2);
 int TS_SleepUntil(const struct timestamp *);
-void TS_Format(char *buf, ssize_t len, const struct timestamp *ts);
+void TS_Format(char *buf, size_t len, const struct timestamp *ts);
 
 void TS_RunTest(struct ocx *ocx);
 

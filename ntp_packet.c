@@ -136,7 +136,7 @@ ts_2ntp32(uint8_t *dst, const struct timestamp *ts)
 
 	CHECK_OBJ_NOTNULL(ts, TIMESTAMP_MAGIC);
 	assert(ts->sec < 65536);
-	Be16enc(dst, ts->sec);
+	Be16enc(dst, (uint16_t)ts->sec);
 	Be16enc(dst + 2, ts->frac >> 48ULL);
 }
 
@@ -149,7 +149,7 @@ ts_2ntp64(uint8_t *dst, const struct timestamp *ts)
 	Be32enc(dst + 4, ts->frac >> 32ULL);
 }
 
-ssize_t
+size_t
 NTP_Packet_Pack(void *ptr, ssize_t len, struct ntp_packet *np)
 {
 	uint8_t *pbuf = ptr;
@@ -160,8 +160,10 @@ NTP_Packet_Pack(void *ptr, ssize_t len, struct ntp_packet *np)
 	assert(np->ntp_version < 8);
 	assert(np->ntp_stratum < 15);
 
-	pbuf[0] = (uint8_t)np->ntp_leap << 6;
-	pbuf[0] |= np->ntp_version << 3;
+	pbuf[0] = (uint8_t)np->ntp_leap;
+	pbuf[0] <<= 3;
+	pbuf[0] |= np->ntp_version;
+	pbuf[0] <<= 3;
 	pbuf[0] |= (uint8_t)np->ntp_mode;
 	pbuf[1] = np->ntp_stratum;
 	pbuf[2] = np->ntp_poll;

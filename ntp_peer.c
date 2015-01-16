@@ -106,7 +106,7 @@ NTP_Peer_Poll(struct ocx *ocx, const struct udp_socket *usc,
     const struct ntp_peer *np, double tmo)
 {
 	char buf[100];
-	ssize_t len;
+	size_t len;
 	struct sockaddr_storage rss;
 	socklen_t rssl;
 	ssize_t l;
@@ -121,7 +121,7 @@ NTP_Peer_Poll(struct ocx *ocx, const struct udp_socket *usc,
 	len = NTP_Packet_Pack(buf, sizeof buf, np->tx_pkt);
 
 	l = Udp_Send(ocx, usc, np->sa, np->sa_len, buf, len);
-	if (l != len) {
+	if (l != (ssize_t)len) {
 		Debug(ocx, "Tx peer %s %s got %zd (%s)\n",
 		    np->hostname, np->ip, l, strerror(errno));
 		return (0);

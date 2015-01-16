@@ -32,6 +32,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "ntimed.h"
 #include "ntp.h"
@@ -70,6 +71,17 @@ NTP_Tool_Client_Req(struct ntp_packet *np)
  * XXX: Nanosecond precision is enough for everybody.
  */
 
+static void __printflike(3, 4)
+bxprintf(char **bp, const char *e, const char *fmt, ...)
+{
+	va_list ap;
+
+	assert(*bp < e);
+	va_start(ap, fmt);
+	*bp += vsnprintf(*bp, (unsigned)(e - *bp), fmt, ap);
+	va_end(ap);
+}
+
 void
 NTP_Tool_Format(char *p, ssize_t len, const struct ntp_packet *pkt)
 {
@@ -82,58 +94,44 @@ NTP_Tool_Format(char *p, ssize_t len, const struct ntp_packet *pkt)
 
 	e = p + len;
 
-	p += snprintf(p, e - p, "[%d", pkt->ntp_leap);
-	assert(p < e);
+	bxprintf(&p, e, "[%d", pkt->ntp_leap);
+	bxprintf(&p, e, " %u", pkt->ntp_version);
 
-	p += snprintf(p, e - p, " %u", pkt->ntp_version);
-	assert(p < e);
+	bxprintf(&p, e, " %d", pkt->ntp_mode);
 
-	p += snprintf(p, e - p, " %d", pkt->ntp_mode);
-	assert(p < e);
+	bxprintf(&p, e, " %3u", pkt->ntp_stratum);
 
-	p += snprintf(p, e - p, " %3u", pkt->ntp_stratum);
-	assert(p < e);
+	bxprintf(&p, e, " %3u", pkt->ntp_poll);
 
-	p += snprintf(p, e - p, " %3u", pkt->ntp_poll);
-	assert(p < e);
-
-	p += snprintf(p, e - p, " %4d", pkt->ntp_precision);
-	assert(p < e);
+	bxprintf(&p, e, " %4d", pkt->ntp_precision);
 
 	TS_Format(buf, sizeof buf, &pkt->ntp_delay);
-	p += snprintf(p, e - p, " %s", buf); assert(p < e);
-	assert(p < e);
+	bxprintf(&p, e, " %s", buf); assert(p < e);
 
 	TS_Format(buf, sizeof buf, &pkt->ntp_dispersion);
-	p += snprintf(p, e - p, " %s", buf); assert(p < e);
-	assert(p < e);
+	bxprintf(&p, e, " %s", buf); assert(p < e);
 
-	p += snprintf(p, e - p, " 0x%02x%02x%02x%02x",
+	bxprintf(&p, e, " 0x%02x%02x%02x%02x",
 	    pkt->ntp_refid[0], pkt->ntp_refid[1],
 	    pkt->ntp_refid[2], pkt->ntp_refid[3]);
-	assert(p < e);
 
-	p += snprintf(p, e - p, " %.9f",
+	bxprintf(&p, e, " %.9f",
 	    TS_Diff(&pkt->ntp_reference, &pkt->ntp_origin));
-	assert(p < e);
 
 	TS_Format(buf, sizeof buf, &pkt->ntp_origin);
-	p += snprintf(p, e - p, " %s", buf); assert(p < e);
-	assert(p < e);
+	bxprintf(&p, e, " %s", buf); assert(p < e);
 
-	p += snprintf(p, e - p, " %.9f",
+	bxprintf(&p, e, " %.9f",
 	    TS_Diff(&pkt->ntp_receive, &pkt->ntp_origin));
-	assert(p < e);
 
-	p += snprintf(p, e - p, " %.9f",
+	bxprintf(&p, e, " %.9f",
 	    TS_Diff(&pkt->ntp_transmit, &pkt->ntp_receive));
-	assert(p < e);
 
 	if (pkt->ts_rx.sec && pkt->ts_rx.frac) {
-		p += snprintf(p, e - p, " %.9f]",
+		bxprintf(&p, e, " %.9f]",
 		    TS_Diff(&pkt->ts_rx, &pkt->ntp_transmit));
 	} else {
-		p += snprintf(p, e - p, " %.9f]", 0.0);
+		bxprintf(&p, e, " %.9f]", 0.0);
 	}
 	assert(p < e);
 }
@@ -173,10 +171,10 @@ NTP_Tool_Scan(struct ntp_packet *pkt, const char *buf)
 
 	INIT_OBJ(pkt, NTP_PACKET_MAGIC);
 	pkt->ntp_leap = (enum ntp_leap)u_fields[0];
-	pkt->ntp_version = u_fields[1];
+	pkt->ntp_version = (uint8_t)u_fields[1];
 	pkt->ntp_mode = (enum ntp_mode)u_fields[2];
-	pkt->ntp_stratum = u_fields[3];
-	pkt->ntp_poll = u_fields[4];
+	pkt->ntp_stratum = (uint8_t)u_fields[3];
+	pkt->ntp_poll = (uint8_t)u_fields[4];
 	pkt->ntp_precision = (int8_t)floor(d_fields[0]);
 	TS_Double(&pkt->ntp_delay, d_fields[1]);
 	TS_Double(&pkt->ntp_dispersion, d_fields[2]);

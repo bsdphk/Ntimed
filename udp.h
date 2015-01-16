@@ -42,5 +42,5 @@ ssize_t UdpTimedRx(struct ocx *, const struct udp_socket *,
     void *, ssize_t len,
     double tmo);
 ssize_t Udp_Send(struct ocx *, const struct udp_socket *,
-    const void *sa, socklen_t, const void *ptr, ssize_t);
+    const void *sa, socklen_t, const void *ptr, size_t);
 

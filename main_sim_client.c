@@ -121,7 +121,7 @@ simfile_readline(struct ocx *ocx, struct todolist *tdl, void *priv)
 
 	while (1) {
 		if (fgets(buf, sizeof buf, sf->input) == NULL) {
-			Debug(ocx, "EOF on -s file (%s)", sf->filename);
+			Debug(ocx, "EOF on -s file (%s)\n", sf->filename);
 			exit(0);
 		}
 		p = strchr(buf, '\r');

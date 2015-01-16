@@ -78,7 +78,7 @@ struct ntp_packet {
 
 struct ntp_packet *NTP_Packet_Unpack(struct ntp_packet *dst, void *ptr,
     ssize_t len);
-ssize_t NTP_Packet_Pack(void *ptr, ssize_t len, struct ntp_packet *);
+size_t NTP_Packet_Pack(void *ptr, ssize_t len, struct ntp_packet *);
 
 /* ntp_tools.c -- Handy tools *****************************************/
 

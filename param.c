@@ -121,7 +121,8 @@ Param_Tweak(struct ocx *ocx, const char *arg)
 		Fail(ocx, 0, "Stopping after parameter query.\n");
 	}
 
-	l = q - arg;
+	assert (q >= arg);
+	l = (unsigned)(q - arg);
 
 	TAILQ_FOREACH(pt, &param_tbl, list) {
 		if (strlen(pt->name) != l)

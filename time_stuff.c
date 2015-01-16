@@ -140,10 +140,11 @@ TS_SleepUntil(const struct timestamp *t)
 /**********************************************************************/
 
 void
-TS_Format(char *buf, ssize_t len, const struct timestamp *ts)
+TS_Format(char *buf, size_t len, const struct timestamp *ts)
 {
 	CHECK_OBJ_NOTNULL(ts, TIMESTAMP_MAGIC);
 	uint64_t x, y;
+	int i;
 
 	/* XXX: Nanosecond precision is enough for everybody. */
 	x = ts->sec;
@@ -152,7 +153,8 @@ TS_Format(char *buf, ssize_t len, const struct timestamp *ts)
 		y -= 1000000000ULL;
 		x += 1;
 	}
-	assert(snprintf(buf, len, "%jd.%09jd", (intmax_t)x, (intmax_t)y) < len);
+	i = snprintf(buf, len, "%jd.%09jd", (intmax_t)x, (intmax_t)y);
+	assert(i < (int)len);
 }
 
 /**********************************************************************
